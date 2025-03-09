@@ -16,6 +16,10 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        scaffoldBackgroundColor: const Color.fromARGB(255, 15, 16, 21),
+        dialogTheme: const DialogTheme(
+          backgroundColor: Color.fromARGB(255, 15, 16, 21),
+        ),
       ),
       home: const MainScreen(),
     );
@@ -62,6 +66,7 @@ class _MainScreenState extends State<MainScreen> {
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue[800],
+        backgroundColor: Color.fromARGB(195, 15, 16, 21),
         onTap: _onItemTapped,
       ),
     );
@@ -113,9 +118,6 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Discord Állapot'),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -160,9 +162,6 @@ class GalleryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Képtár'),
-      ),
       body: GridView.builder(
         padding: const EdgeInsets.all(10),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -203,7 +202,7 @@ class FullScreenImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color.fromARGB(255, 15, 16, 21),
       body: Center(
         child: GestureDetector(
           onTap: () => Navigator.pop(context),
