@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 void main() {
   runApp(const MainApp());
@@ -70,6 +71,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -79,19 +81,39 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchUserData() async {
     try {
-      final response = await http.get(
-        Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'),
-      );
+      final response = await http
+          .get(
+            Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         setState(() {
           _userData = json.decode(response.body);
-          print(_userData);
           _isLoading = false;
+          _errorMessage = '';
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'HTTP kérés sikertelen: ${response.statusCode}';
         });
       }
+    } on http.ClientException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Hálózati hiba: ${e.message}';
+      });
+    } on TimeoutException {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Időtúllépés a szerver válaszára';
+      });
     } catch (e) {
-      print('Error fetching data: $e');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Váratlan hiba: ${e.toString()}';
+      });
     }
   }
 
@@ -133,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      activity['name'] ?? 'Unknown',
+                      activity['name'] ?? 'Ismeretlen',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -161,10 +183,36 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 50),
+          const SizedBox(height: 20),
+          Text(
+            _errorMessage,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _fetchUserData,
+            child: const Text('Újrapróbálás'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage.isNotEmpty) {
+      return _buildErrorWidget();
     }
 
     final user = _userData?['user'];
@@ -190,7 +238,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
             Text(
-              user?['display_name'] ?? 'Unknown',
+              user?['display_name'] ?? 'Ismeretlen',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -199,7 +247,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 10),
             Text(
-              '@${user?['name'] ?? 'unknown'}',
+              '@${user?['name'] ?? 'ismeretlen'}',
               style: TextStyle(color: Colors.grey[400]),
             ),
             ...activities.map<Widget>(
@@ -211,8 +259,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-// GalleryPage és FullScreenImage változatlan marad
 
 class GalleryPage extends StatelessWidget {
   const GalleryPage({super.key});
@@ -267,7 +313,7 @@ class FullScreenImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 15, 16, 21),
+      backgroundColor: const Color(0xFF1A1B22),
       body: Center(
         child: GestureDetector(
           onTap: () => Navigator.pop(context),
