@@ -89,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _fetchData() async {
     try {
       final response = await http
-          .get(Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'))
+          .get(Uri.parse('https://adi.huntools-bot.xyz/user/1006581830880874618'))
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -210,6 +210,7 @@ class GalleryPage extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
+          childAspectRatio: 0.7, // Arány beállítása
         ),
         itemCount: _imageUrls.length,
         itemBuilder: (context, index) => GestureDetector(
@@ -219,9 +220,22 @@ class GalleryPage extends StatelessWidget {
               builder: (context) => FullScreenImage(imageUrl: _imageUrls[index]),
             ),
           ),
-          child: Hero(
-            tag: _imageUrls[index],
-            child: Image.network(_imageUrls[index], fit: BoxFit.cover),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Hero(
+              tag: _imageUrls[index],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  _imageUrls[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
           ),
         ),
       ),
