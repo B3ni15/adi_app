@@ -13,7 +13,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Discord User Status',
+      title: 'Discord User Monitor',
       theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1B22)),
       home: const MainScreen(),
     );
@@ -37,26 +37,22 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: _buildNavBar(),
-    );
-  }
-
-  BottomNavigationBar _buildNavBar() {
-    return BottomNavigationBar(
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Főoldal'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.photo_library),
-          label: 'Képtár',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.grey[600],
-      backgroundColor: const Color(0x4D1A1B22),
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-      onTap: _onItemTapped,
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Főoldal'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.photo_library),
+            label: 'Képtár',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey[600],
+        backgroundColor: const Color(0x4D1A1B22),
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }
@@ -72,10 +68,24 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
   String _errorMessage = '';
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchUserData();
+    });
     _fetchUserData();
   }
 
@@ -96,24 +106,13 @@ class _HomePageState extends State<HomePage> {
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'HTTP kérés sikertelen: ${response.statusCode}';
+          _errorMessage = 'Hiba: ${response.statusCode}';
         });
       }
-    } on http.ClientException catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Hálózati hiba: ${e.message}';
-      });
     } on TimeoutException {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Időtúllépés a szerver válaszára';
-      });
+      setState(() => _errorMessage = 'Időtúllépés');
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Váratlan hiba: ${e.toString()}';
-      });
+      setState(() => _errorMessage = 'Hiba: ${e.toString()}');
     }
   }
 
@@ -130,7 +129,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _buildActivityBox(Map<String, dynamic> activity) {
+  String _fixImageUrl(String url) {
+    if (url.contains('raw.githubusercontent.com')) {
+      return 'https://cdn.discordapp.com/app-assets/782685898163617802/mp:external/Joitre7BBxO-F2IaS7R300AaAcixAvPu3WD1YchRgdc/https/raw.githubusercontent.com/LeonardSSH/vscord/main/assets/icons/vscode.png.png';
+    }
+    return url;
+  }
+
+  Widget _buildActivity(dynamic activity) {
+    final assets = activity['assets'] as Map<String, dynamic>?;
+    final mainImage = assets?['large_image']?.toString();
+
     return Container(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(top: 20),
@@ -138,67 +147,51 @@ class _HomePageState extends State<HomePage> {
         color: const Color(0xFF2B2D35),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          if (activity['assets'] != null)
-            Row(
+          if (mainImage != null)
+            Image.network(_fixImageUrl(mainImage), width: 40, height: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (activity['assets']['large_image'] != null)
-                  Image.network(
-                    activity['assets']['large_image'],
-                    width: 40,
-                    height: 40,
+                Text(
+                  activity['name']?.toString() ?? 'Aktivitás',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      activity['name'] ?? 'Ismeretlen',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (activity['details'] != null)
-                      Text(
-                        activity['details'],
-                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                      ),
-                  ],
                 ),
+                if (activity['details'] != null)
+                  Text(
+                    activity['details'].toString(),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  ),
               ],
             ),
-          if (activity['state'] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                activity['state'],
-                style: TextStyle(color: Colors.grey[400]),
-              ),
-            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildError() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 50),
+          const Icon(Icons.error, color: Colors.red, size: 50),
           const SizedBox(height: 20),
           Text(
             _errorMessage,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _fetchUserData,
-            child: const Text('Újrapróbálás'),
+            child: const Text('Újratöltés'),
           ),
         ],
       ),
@@ -207,52 +200,50 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_errorMessage.isNotEmpty) {
-      return _buildErrorWidget();
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_errorMessage.isNotEmpty) return _buildError();
 
     final user = _userData?['user'];
-    final status = user?['status'] ?? 'offline';
-    final activities = user?['activities'] ?? [];
+    final status = user?['status']?.toString() ?? 'offline';
+    final activities =
+        (user?['activities'] as List?)
+            ?.where((a) => a['type'] != 'custom')
+            .toList() ??
+        [];
 
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _getStatusColor(status),
               ),
               child: CircleAvatar(
-                radius: 60,
-                backgroundImage: NetworkImage(user?['avatar'] ?? ''),
+                radius: 65,
+                backgroundImage: NetworkImage(
+                  user?['avatar']?.toString() ?? '',
+                ),
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              user?['display_name'] ?? 'Ismeretlen',
+              user?['display_name']?.toString() ?? 'Ismeretlen',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
-              '@${user?['name'] ?? 'ismeretlen'}',
+              '@${user?['name']?.toString() ?? 'unknown'}',
               style: TextStyle(color: Colors.grey[400]),
             ),
-            ...activities.map<Widget>(
-              (activity) => _buildActivityBox(activity),
-            ),
+            ...activities.map(_buildActivity),
           ],
         ),
       ),
@@ -261,8 +252,6 @@ class _HomePageState extends State<HomePage> {
 }
 
 class GalleryPage extends StatelessWidget {
-  const GalleryPage({super.key});
-
   final List<String> imageUrls = const [
     'https://picsum.photos/200/300',
     'https://picsum.photos/250/300',
@@ -271,6 +260,8 @@ class GalleryPage extends StatelessWidget {
     'https://picsum.photos/400/300',
     'https://picsum.photos/450/300',
   ];
+
+  const GalleryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -283,23 +274,22 @@ class GalleryPage extends StatelessWidget {
           mainAxisSpacing: 10,
         ),
         itemCount: imageUrls.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => FullScreenImage(imageUrl: imageUrls[index]),
-                ),
-              );
-            },
-            child: Hero(
-              tag: imageUrls[index],
-              child: Image.network(imageUrls[index], fit: BoxFit.cover),
+        itemBuilder:
+            (context, index) => GestureDetector(
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              FullScreenImage(imageUrl: imageUrls[index]),
+                    ),
+                  ),
+              child: Hero(
+                tag: imageUrls[index],
+                child: Image.network(imageUrls[index], fit: BoxFit.cover),
+              ),
             ),
-          );
-        },
       ),
     );
   }
@@ -313,10 +303,10 @@ class FullScreenImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1B22),
-      body: Center(
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Center(
           child: Hero(
             tag: imageUrl,
             child: Image.network(imageUrl, fit: BoxFit.contain),
