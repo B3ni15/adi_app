@@ -13,8 +13,10 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Discord User Monitor',
-      theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1B22)),
+      title: 'Discord Profil',
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFF1A1B22),
+      ),
       home: const MainScreen(),
     );
   }
@@ -29,7 +31,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = [const HomePage(), const GalleryPage()];
+  final List<Widget> _pages = [const ProfilePage(), const GalleryPage()];
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
@@ -39,11 +41,8 @@ class _MainScreenState extends State<MainScreen> {
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Főoldal'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
-            label: 'Képtár',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.photo_library), label: 'Képtár'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.white,
@@ -57,18 +56,18 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
   String _errorMessage = '';
-  Timer? _autoRefreshTimer;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -78,23 +77,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _autoRefreshTimer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
   void _startAutoRefresh() {
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _fetchUserData();
-    });
-    _fetchUserData();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchData());
+    _fetchData();
   }
 
-  Future<void> _fetchUserData() async {
+  Future<void> _fetchData() async {
     try {
       final response = await http
-          .get(
-            Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'),
-          )
+          .get(Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'))
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -118,62 +113,11 @@ class _HomePageState extends State<HomePage> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'online':
-        return Colors.green;
-      case 'dnd':
-        return Colors.red;
-      case 'idle':
-        return Colors.amber;
-      default:
-        return Colors.grey;
+      case 'online': return Colors.green;
+      case 'dnd': return Colors.red;
+      case 'idle': return Colors.amber;
+      default: return Colors.grey;
     }
-  }
-
-  String _fixImageUrl(String url) {
-    if (url.contains('raw.githubusercontent.com')) {
-      return 'https://cdn.discordapp.com/app-assets/782685898163617802/mp:external/Joitre7BBxO-F2IaS7R300AaAcixAvPu3WD1YchRgdc/https/raw.githubusercontent.com/LeonardSSH/vscord/main/assets/icons/vscode.png.png';
-    }
-    return url;
-  }
-
-  Widget _buildActivity(dynamic activity) {
-    final assets = activity['assets'] as Map<String, dynamic>?;
-    final mainImage = assets?['large_image']?.toString();
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(top: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B2D35),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          if (mainImage != null)
-            Image.network(_fixImageUrl(mainImage), width: 40, height: 40),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity['name']?.toString() ?? 'Aktivitás',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (activity['details'] != null)
-                  Text(
-                    activity['details'].toString(),
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildError() {
@@ -181,16 +125,15 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error, color: Colors.red, size: 50),
+          const Icon(Icons.error_outline, color: Colors.red, size: 50),
           const SizedBox(height: 20),
-          Text(
-            _errorMessage,
+          Text(_errorMessage,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _fetchUserData,
+            onPressed: _fetchData,
             child: const Text('Újratöltés'),
           ),
         ],
@@ -205,16 +148,11 @@ class _HomePageState extends State<HomePage> {
 
     final user = _userData?['user'];
     final status = user?['status']?.toString() ?? 'offline';
-    final activities =
-        (user?['activities'] as List?)
-            ?.where((a) => a['type'] != 'custom')
-            .toList() ??
-        [];
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(3),
@@ -223,27 +161,27 @@ class _HomePageState extends State<HomePage> {
                 color: _getStatusColor(status),
               ),
               child: CircleAvatar(
-                radius: 65,
-                backgroundImage: NetworkImage(
-                  user?['avatar']?.toString() ?? '',
-                ),
+                radius: 70,
+                backgroundImage: NetworkImage(user?['avatar'] ?? ''),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
             Text(
-              user?['display_name']?.toString() ?? 'Ismeretlen',
+              user?['display_name'] ?? 'Ismeretlen felhasználó',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              '@${user?['name']?.toString() ?? 'unknown'}',
-              style: TextStyle(color: Colors.grey[400]),
+              '@${user?['name'] ?? 'unknown'}',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 18,
+              ),
             ),
-            ...activities.map(_buildActivity),
           ],
         ),
       ),
@@ -252,7 +190,9 @@ class _HomePageState extends State<HomePage> {
 }
 
 class GalleryPage extends StatelessWidget {
-  final List<String> imageUrls = const [
+  const GalleryPage({super.key});
+
+  final List<String> _imageUrls = const [
     'https://picsum.photos/200/300',
     'https://picsum.photos/250/300',
     'https://picsum.photos/300/300',
@@ -260,8 +200,6 @@ class GalleryPage extends StatelessWidget {
     'https://picsum.photos/400/300',
     'https://picsum.photos/450/300',
   ];
-
-  const GalleryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -273,23 +211,19 @@ class GalleryPage extends StatelessWidget {
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
-        itemCount: imageUrls.length,
-        itemBuilder:
-            (context, index) => GestureDetector(
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              FullScreenImage(imageUrl: imageUrls[index]),
-                    ),
-                  ),
-              child: Hero(
-                tag: imageUrls[index],
-                child: Image.network(imageUrls[index], fit: BoxFit.cover),
-              ),
+        itemCount: _imageUrls.length,
+        itemBuilder: (context, index) => GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FullScreenImage(imageUrl: _imageUrls[index]),
             ),
+          ),
+          child: Hero(
+            tag: _imageUrls[index],
+            child: Image.network(_imageUrls[index], fit: BoxFit.cover),
+          ),
+        ),
       ),
     );
   }
