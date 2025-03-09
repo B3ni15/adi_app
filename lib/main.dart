@@ -12,15 +12,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 15, 16, 21),
-        dialogTheme: const DialogTheme(
-          backgroundColor: Color.fromARGB(255, 15, 16, 21),
-        ),
-      ),
+      title: 'Discord User Status',
+      theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1B22)),
       home: const MainScreen(),
     );
   }
@@ -35,43 +28,34 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = [
-    const HomePage(),
-    const GalleryPage(),
-  ];
+  final List<Widget> _pages = [const HomePage(), const GalleryPage()];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Főoldal',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
-            label: 'Képtár',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey[600],
-        backgroundColor: const Color(0x4D1A1B22), // 30% opacity
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
+      bottomNavigationBar: _buildNavBar(),
+    );
+  }
+
+  BottomNavigationBar _buildNavBar() {
+    return BottomNavigationBar(
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Főoldal'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.photo_library),
+          label: 'Képtár',
+        ),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.grey[600],
+      backgroundColor: const Color(0x4D1A1B22),
+      type: BottomNavigationBarType.fixed,
+      elevation: 8,
+      onTap: _onItemTapped,
     );
   }
 }
@@ -84,64 +68,142 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _isOnline = false;
-  bool _notificationShown = false;
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
 
-  Future<void> _checkDiscordStatus() async {
-    final response = await http.get(Uri.parse('https://discordstatus.com/api/v2/status.json'));
-    
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setState(() {
-        _isOnline = data['status']['indicator'] == 'none';
-      });
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
 
-      if (_isOnline && !_notificationShown) {
-        _showNotification();
-        _notificationShown = true;
+  Future<void> _fetchUserData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://adi.huntools-bot.xyz/user/801162422580019220'),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _userData = json.decode(response.body);
+          print(_userData);
+          _isLoading = false;
+        });
       }
+    } catch (e) {
+      print('Error fetching data: $e');
     }
   }
 
-  void _showNotification() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('A Discord szerver elérhető!'),
-        duration: Duration(seconds: 3),
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'online':
+        return Colors.green;
+      case 'dnd':
+        return Colors.red;
+      case 'idle':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildActivityBox(Map<String, dynamic> activity) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(top: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B2D35),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activity['assets'] != null)
+            Row(
+              children: [
+                if (activity['assets']['large_image'] != null)
+                  Image.network(
+                    activity['assets']['large_image'],
+                    width: 40,
+                    height: 40,
+                  ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity['name'] ?? 'Unknown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (activity['details'] != null)
+                      Text(
+                        activity['details'],
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          if (activity['state'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                activity['state'],
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   @override
-  void initState() {
-    super.initState();
-    _checkDiscordStatus();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final user = _userData?['user'];
+    final status = user?['status'] ?? 'offline';
+    final activities = user?['activities'] ?? [];
+
     return Scaffold(
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              _isOnline ? Icons.cloud_done : Icons.cloud_off,
-              size: 100,
-              color: _isOnline ? Colors.green : Colors.red,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _isOnline ? 'Online' : 'Offline',
-              style: TextStyle(
-                fontSize: 24,
-                color: _isOnline ? Colors.green : Colors.red,
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _getStatusColor(status),
+              ),
+              child: CircleAvatar(
+                radius: 60,
+                backgroundImage: NetworkImage(user?['avatar'] ?? ''),
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _checkDiscordStatus,
-              child: const Text('Frissítés'),
+            Text(
+              user?['display_name'] ?? 'Unknown',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '@${user?['name'] ?? 'unknown'}',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            ...activities.map<Widget>(
+              (activity) => _buildActivityBox(activity),
             ),
           ],
         ),
@@ -149,6 +211,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// GalleryPage és FullScreenImage változatlan marad
 
 class GalleryPage extends StatelessWidget {
   const GalleryPage({super.key});
@@ -179,16 +243,14 @@ class GalleryPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FullScreenImage(imageUrl: imageUrls[index]),
+                  builder:
+                      (context) => FullScreenImage(imageUrl: imageUrls[index]),
                 ),
               );
             },
             child: Hero(
               tag: imageUrls[index],
-              child: Image.network(
-                imageUrls[index],
-                fit: BoxFit.cover,
-              ),
+              child: Image.network(imageUrls[index], fit: BoxFit.cover),
             ),
           );
         },
@@ -211,10 +273,7 @@ class FullScreenImage extends StatelessWidget {
           onTap: () => Navigator.pop(context),
           child: Hero(
             tag: imageUrl,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.contain,
-            ),
+            child: Image.network(imageUrl, fit: BoxFit.contain),
           ),
         ),
       ),
