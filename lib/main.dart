@@ -65,9 +65,12 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue[800],
-        backgroundColor: Color.fromARGB(195, 15, 16, 21),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey[600],
+        backgroundColor: const Color(0x4D1A1B22), // 30% opacity
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
       ),
     );
   }
