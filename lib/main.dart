@@ -14,9 +14,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Discord Profil',
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF1A1B22),
-      ),
+      theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1B22)),
       home: const MainScreen(),
     );
   }
@@ -42,7 +40,10 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(icon: Icon(Icons.photo_library), label: 'Képtár'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.photo_library),
+            label: 'Képtár',
+          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.white,
@@ -82,14 +83,19 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchData());
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _fetchData(),
+    );
     _fetchData();
   }
 
   Future<void> _fetchData() async {
     try {
       final response = await http
-          .get(Uri.parse('https://adi.huntools-bot.xyz/user/1006581830880874618'))
+          .get(
+            Uri.parse('https://adi.huntools-bot.xyz/user/1006581830880874618'),
+          )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -113,10 +119,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'online': return Colors.green;
-      case 'dnd': return Colors.red;
-      case 'idle': return Colors.amber;
-      default: return Colors.grey;
+      case 'online':
+        return Colors.green;
+      case 'dnd':
+        return Colors.red;
+      case 'idle':
+        return Colors.amber;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -127,7 +137,8 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 50),
           const SizedBox(height: 20),
-          Text(_errorMessage,
+          Text(
+            _errorMessage,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -141,6 +152,60 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildActivity(Map<String, dynamic>? activity) {
+    if (activity == null) return const SizedBox.shrink();
+
+    final name = activity['name']?.toString();
+    final state = activity['state']?.toString();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B2D31),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1B1E),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.gamepad, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (name != null && name.isNotEmpty)
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (state != null && state.isNotEmpty)
+                  Text(
+                    state,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
@@ -148,6 +213,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final user = _userData?['user'];
     final status = user?['status']?.toString() ?? 'offline';
+    final activities =
+        (user?['activities'] as List?)?.cast<Map<String, dynamic>>();
+
+    Map<String, dynamic>? selectedActivity;
+    if (activities != null) {
+      if (activities.length > 1) {
+        selectedActivity = activities[1];
+      } else if (activities.isNotEmpty) {
+        selectedActivity = activities[0];
+      }
+    }
 
     return Scaffold(
       body: Center(
@@ -177,11 +253,10 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 10),
             Text(
               '@${user?['name'] ?? 'unknown'}',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18),
             ),
+            const SizedBox(height: 20),
+            _buildActivity(selectedActivity),
           ],
         ),
       ),
@@ -210,34 +285,38 @@ class GalleryPage extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.7, // Arány beállítása
+          childAspectRatio: 0.7,
         ),
         itemCount: _imageUrls.length,
-        itemBuilder: (context, index) => GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FullScreenImage(imageUrl: _imageUrls[index]),
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Hero(
-              tag: _imageUrls[index],
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _imageUrls[index],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
+        itemBuilder:
+            (context, index) => GestureDetector(
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              FullScreenImage(imageUrl: _imageUrls[index]),
+                    ),
+                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Hero(
+                  tag: _imageUrls[index],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      _imageUrls[index],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
       ),
     );
   }
