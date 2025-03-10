@@ -1,4 +1,4 @@
-# adi_app
+# Adi App
 
 A new Flutter project.
 
