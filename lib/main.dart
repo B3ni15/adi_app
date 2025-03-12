@@ -9,7 +9,6 @@ FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize notifications plugin
   flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   const AndroidInitializationSettings initializationSettingsAndroid =
@@ -17,10 +16,10 @@ void main() async {
 
   final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -45,35 +44,13 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
   @override
-  _MainScreenState createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  final List<Widget> _pages = [const ProfilePage()];
-
-  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey[600],
-        backgroundColor: const Color(0x4D1A1B22),
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        onTap: _onItemTapped,
-      ),
+    return const Scaffold(
+      body: ProfilePage(),
     );
   }
 }
@@ -95,12 +72,12 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showNotification() async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
-          'adam_online_channel',
-          'Ádám állapota',
-          importance: Importance.max,
-          priority: Priority.high,
-          showWhen: false,
-        );
+      'adam_online_channel',
+      'Ádám állapota',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: false,
+    );
 
     const DarwinNotificationDetails darwinNotificationDetails =
         DarwinNotificationDetails();

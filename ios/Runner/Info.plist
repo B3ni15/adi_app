@@ -44,7 +44,8 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<key>UIBackgroundModes</key>
 	<array>
-  		<string>fetch</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
