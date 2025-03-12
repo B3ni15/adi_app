@@ -2,8 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-void main() {
+FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notifications plugin
+  flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+  );
+
+  await flutterLocalNotificationsPlugin!.initialize(initializationSettings);
+
   runApp(const MainApp());
 }
 
@@ -29,7 +54,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = [const ProfilePage(), const GalleryPage()];
+  final List<Widget> _pages = [const ProfilePage()];
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
@@ -40,10 +65,6 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
-            label: 'Képtár',
-          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.white,
@@ -69,6 +90,33 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   String _errorMessage = '';
   Timer? _refreshTimer;
+  String? _previousStatus;
+
+  void _showNotification() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+          'adam_online_channel',
+          'Ádám állapota',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+
+    const DarwinNotificationDetails darwinNotificationDetails =
+        DarwinNotificationDetails();
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+      iOS: darwinNotificationDetails,
+    );
+
+    await flutterLocalNotificationsPlugin?.show(
+      0,
+      'Ádám online!',
+      'Ádám most online állapotban van.',
+      notificationDetails,
+    );
+  }
 
   @override
   void initState() {
@@ -99,11 +147,23 @@ class _ProfilePageState extends State<ProfilePage> {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
+        final newData = json.decode(response.body);
+        final user = newData['user'];
+        final currentStatus = user?['status']?.toString() ?? 'offline';
+
         setState(() {
-          _userData = json.decode(response.body);
+          _userData = newData;
           _isLoading = false;
           _errorMessage = '';
         });
+
+        // Check status change
+        if (_previousStatus != null &&
+            currentStatus == 'online' &&
+            _previousStatus != 'online') {
+          _showNotification();
+        }
+        _previousStatus = currentStatus;
       } else {
         setState(() {
           _isLoading = false;
@@ -258,86 +318,6 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 20),
             _buildActivity(selectedActivity),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class GalleryPage extends StatelessWidget {
-  const GalleryPage({super.key});
-
-  final List<String> _imageUrls = const [
-    'https://picsum.photos/200/300',
-    'https://picsum.photos/250/300',
-    'https://picsum.photos/300/300',
-    'https://picsum.photos/350/300',
-    'https://picsum.photos/400/300',
-    'https://picsum.photos/450/300',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: GridView.builder(
-        padding: const EdgeInsets.all(10),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.7,
-        ),
-        itemCount: _imageUrls.length,
-        itemBuilder:
-            (context, index) => GestureDetector(
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              FullScreenImage(imageUrl: _imageUrls[index]),
-                    ),
-                  ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Hero(
-                  tag: _imageUrls[index],
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      _imageUrls[index],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-      ),
-    );
-  }
-}
-
-class FullScreenImage extends StatelessWidget {
-  final String imageUrl;
-
-  const FullScreenImage({super.key, required this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Center(
-          child: Hero(
-            tag: imageUrl,
-            child: Image.network(imageUrl, fit: BoxFit.contain),
-          ),
         ),
       ),
     );
