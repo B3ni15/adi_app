@@ -37,8 +37,11 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Discord Profil',
-      theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1B22)),
+      title: 'Ádám Profil',
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFF232428),
+        fontFamily: 'Whitney',
+      ),
       home: const MainScreen(),
     );
   }
@@ -154,13 +157,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'online':
-        return Colors.green;
+        return const Color(0xFF3BA55D);
       case 'dnd':
-        return Colors.red;
+        return const Color(0xFFED4245);
       case 'idle':
-        return Colors.amber;
+        return const Color(0xFFFAA81A);
       default:
-        return Colors.grey;
+        return const Color(0xFF747F8D);
     }
   }
 
@@ -178,8 +181,14 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5865F2),
+            ),
             onPressed: _fetchData,
-            child: const Text('Újratöltés'),
+            child: const Text(
+              'Újratöltés',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -194,43 +203,58 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2B2D31),
         borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1B1E),
+              color: const Color(0xFF1E1F22),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.gamepad, color: Colors.white, size: 28),
+            child: const Icon(
+              Icons.sports_esports_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (name != null && name.isNotEmpty)
                   Text(
-                    name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                    name.toUpperCase(),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 if (state != null && state.isNotEmpty)
-                  Text(
-                    state,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      state,
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -242,7 +266,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF5865F2)),
+      );
+    }
     if (_errorMessage.isNotEmpty) return _buildError();
 
     final user = _userData?['user'];
@@ -260,38 +288,70 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _getStatusColor(status),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _getStatusColor(status),
+                      border: Border.all(
+                        color: const Color(0xFF232428),
+                        width: 6,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 70,
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: NetworkImage(user?['avatar'] ?? ''),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(status),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF232428),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: CircleAvatar(
-                radius: 70,
-                backgroundImage: NetworkImage(user?['avatar'] ?? ''),
+              const SizedBox(height: 24),
+              Text(
+                user?['display_name'] ?? 'Ismeretlen felhasználó',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 25),
-            Text(
-              user?['display_name'] ?? 'Ismeretlen felhasználó',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              Text(
+                '@${user?['name'] ?? 'unknown'}',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '@${user?['name'] ?? 'unknown'}',
-              style: TextStyle(color: Colors.grey[400], fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            _buildActivity(selectedActivity),
-          ],
+              const SizedBox(height: 32),
+              if (selectedActivity != null) _buildActivity(selectedActivity),
+            ],
+          ),
         ),
       ),
     );
