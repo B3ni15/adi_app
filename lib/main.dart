@@ -289,7 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       body: Container(
-        color: const Color(0xFF0F1015), // háttérszín
+        color: const Color(0xFF0F1015),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
@@ -307,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         border: Border.all(
                           color: const Color(
                             0xFF0F1015,
-                          ), // az új BG színnel egyezik
+                          ),
                           width: 6,
                         ),
                       ),
