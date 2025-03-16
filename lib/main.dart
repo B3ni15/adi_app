@@ -16,10 +16,10 @@ void main() async {
 
   final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -49,9 +49,7 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: ProfilePage(),
-    );
+    return const Scaffold(body: ProfilePage());
   }
 }
 
@@ -72,12 +70,12 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showNotification() async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
-      'adam_online_channel',
-      'Ádám állapota',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: false,
-    );
+          'adam_online_channel',
+          'Ádám állapota',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
 
     const DarwinNotificationDetails darwinNotificationDetails =
         DarwinNotificationDetails();
