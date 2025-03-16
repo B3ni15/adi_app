@@ -134,7 +134,6 @@ class _ProfilePageState extends State<ProfilePage> {
           _errorMessage = '';
         });
 
-        // Check status change
         if (_previousStatus != null &&
             currentStatus == 'online' &&
             _previousStatus != 'online') {
