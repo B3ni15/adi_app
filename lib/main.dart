@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
@@ -39,7 +40,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ádám Profil',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF232428),
+        scaffoldBackgroundColor: const Color(0xFF0F1015), 
         fontFamily: 'Whitney',
       ),
       home: const MainScreen(),
@@ -201,65 +202,64 @@ class _ProfilePageState extends State<ProfilePage> {
     final name = activity['name']?.toString();
     final state = activity['state']?.toString();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B2D31),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1F22),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.sports_esports_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (name != null && name.isNotEmpty)
-                  Text(
-                    name.toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                if (state != null && state.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      state,
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.sports_esports_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (name != null && name.isNotEmpty)
+                      Text(
+                        name.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                    if (state != null && state.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          state,
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -288,69 +288,75 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      body: SingleChildScrollView(
+      body: Container(
+        color: const Color(0xFF0F1015), // háttérszín
         child: Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _getStatusColor(status),
-                      border: Border.all(
-                        color: const Color(0xFF232428),
-                        width: 6,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getStatusColor(status),
+                        border: Border.all(
+                          color: const Color(
+                            0xFF0F1015,
+                          ), // az új BG színnel egyezik
+                          width: 6,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 70,
+                        backgroundColor: Colors.transparent,
+                        backgroundImage: NetworkImage(user?['avatar'] ?? ''),
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 70,
-                      backgroundColor: Colors.transparent,
-                      backgroundImage: NetworkImage(user?['avatar'] ?? ''),
-                    ),
-                  ),
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(status),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF232428),
-                          width: 3,
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF0F1015),
+                            width: 3,
+                          ),
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  user?['display_name'] ?? 'Ismeretlen felhasználó',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                user?['display_name'] ?? 'Ismeretlen felhasználó',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '@${user?['name'] ?? 'unknown'}',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 8),
+                Text(
+                  '@${user?['name'] ?? 'unknown'}',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              if (selectedActivity != null) _buildActivity(selectedActivity),
-            ],
+                const SizedBox(height: 32),
+                if (selectedActivity != null) _buildActivity(selectedActivity),
+              ],
+            ),
           ),
         ),
       ),
