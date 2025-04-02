@@ -6,10 +6,5 @@
 version: 2
 updates:
   - package-ecosystem: "pub"
-    directories:
-      - "/refilc"
-      - "/refilc_plus"
-      - "/refilc_kreta_api"
-      - "/refilc_mobile_ui"
     schedule:
-      interval: "daily"
+      interval: "weekly"
